@@ -4,12 +4,32 @@ import PaginationFooter from '../components/PaginationFooter';
 import BlockList from '../components/BlockList.tsx';
 import {useNavigation} from '@react-navigation/native';
 import {fetchBlocks} from '../api/index.ts';
+import io from 'socket.io-client';
 
 const BlockListingScreen: React.FC = () => {
   const navigation = useNavigation();
   const limit = 10; // Number of transactions per page
   const [blocks, setBlocks] = useState<any[]>([]);
   const [page, setPage] = useState<number>(1);
+
+  const [connected, setConnected] = useState(false);
+  const socket = io('wss://testnet-service.lisk.com/blockchain');
+  useEffect(() => {
+    socket.on('connect', () => {
+      setConnected(true);
+    });
+    socket.on('new.block', (block: any) => {
+      setBlocks(prevBlocks => [block, ...prevBlocks]);
+    });
+
+    socket.on('disconnect', () => {
+      setConnected(false);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
